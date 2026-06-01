@@ -33,5 +33,5 @@ CREATE TABLE venda (
     data_compra DATE NOT NULL,
     forma_pagamento VARCHAR(50) NOT NULL,
     valor_total DECIMAL(10,2) NOT NULL,
-    status_pedido VARCHAR(30) NOT NULL,
+    status_pedido VARCHAR(30) NOT NULL
 );
