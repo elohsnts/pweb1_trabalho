@@ -1,109 +1,77 @@
 <?php
-require_once '../header.php';
-require_once '../db.class.php';
+include '../db.class.php';
+include '../header.php';
 
-$db = new DB();
-$pdo = $db->getConexao();
+$db = DB::conectar();
+$id = $_GET['id'] ?? null;
+$venda = ['data_compra' => date('Y-m-d'), 'forma_pagamento' => 'Pix', 'valor_total' => '', 'status_pedido' => 'Aprovado'];
 
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$v = ['id' => 0, 'data_compra' => '', 'forma_pagamento' => '', 'valor_total' => '', 'status_pedido' => ''];
-$erros = [];
-
-if ($id > 0) {
-    $stmt = $pdo->prepare("SELECT * FROM venda WHERE id = ?");
+if ($id) {
+    $stmt = $db->prepare("SELECT * FROM venda WHERE id = ?");
     $stmt->execute([$id]);
-    $v = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$v) { header('Location: VendaList.php'); exit; }
+    $venda = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $v['data_compra']      = trim($_POST['data_compra'] ?? '');
-    $v['forma_pagamento']  = trim($_POST['forma_pagamento'] ?? '');
-    $v['valor_total']      = trim($_POST['valor_total'] ?? '');
-    $v['status_pedido']    = trim($_POST['status_pedido'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $data = $_POST['data_compra'];
+    $pagamento = $_POST['forma_pagamento'];
+    $valor = $_POST['valor_total'];
+    $status = $_POST['status_pedido'];
 
-    if (empty($v['data_compra']))     $erros[] = 'Data da compra é obrigatória.';
-    if (empty($v['forma_pagamento'])) $erros[] = 'Forma de pagamento é obrigatória.';
-    if (empty($v['valor_total']) || !is_numeric($v['valor_total']))
-        $erros[] = 'Valor total inválido.';
-    if (empty($v['status_pedido']))   $erros[] = 'Status do pedido é obrigatório.';
-
-    if (empty($erros)) {
-        if ($id > 0) {
-            $stmt = $pdo->prepare("UPDATE venda SET data_compra=?, forma_pagamento=?, valor_total=?, status_pedido=? WHERE id=?");
-            $stmt->execute([$v['data_compra'], $v['forma_pagamento'], $v['valor_total'], $v['status_pedido'], $id]);
-        } else {
-            $stmt = $pdo->prepare("INSERT INTO venda (data_compra, forma_pagamento, valor_total, status_pedido) VALUES (?,?,?,?)");
-            $stmt->execute([$v['data_compra'], $v['forma_pagamento'], $v['valor_total'], $v['status_pedido']]);
-        }
-        header('Location: VendaList.php?msg=salvo');
-        exit;
+    if ($id) {
+        $sql = "UPDATE venda SET data_compra=?, forma_pagamento=?, valor_total=?, status_pedido=? WHERE id=?";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$data, $pagamento, $valor, $status, $id]);
+    } else {
+        $sql = "INSERT INTO venda (data_compra, forma_pagamento, valor_total, status_pedido) VALUES (?, ?, ?, ?)";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$data, $pagamento, $valor, $status]);
     }
+    header("Location: VendaList.php");
+    exit;
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="fw-bold" style="color:#c0397a;">
-        <i class="fa-solid fa-cart-shopping me-2"></i><?= $id > 0 ? 'Editar Venda' : 'Nova Venda' ?>
-    </h2>
-    <a href="VendaList.php" class="btn btn-outline-secondary">
-        <i class="fa-solid fa-arrow-left me-1"></i>Voltar
-    </a>
+<div class="mb-4">
+    <h2><?php echo $id ? 'Editar' : 'Registrar'; ?> Venda</h2>
 </div>
 
-<?php if (!empty($erros)): ?>
-    <div class="alert alert-danger">
-        <ul class="mb-0">
-            <?php foreach ($erros as $e): ?>
-                <li><?= htmlspecialchars($e) ?></li>
-            <?php endforeach; ?>
-        </ul>
-    </div>
-<?php endif; ?>
-
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-4">
+<div class="card shadow-sm">
+    <div class="card-body">
         <form method="POST">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Data da Compra *</label>
-                    <input type="date" name="data_compra" class="form-control"
-                           value="<?= htmlspecialchars($v['data_compra']) ?>" required>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label>Data da Compra</label>
+                    <input type="date" name="data_compra" class="form-control" value="<?php echo htmlspecialchars($venda['data_compra']); ?>" required>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Forma de Pagamento *</label>
-                    <select name="forma_pagamento" class="form-select" required>
-                        <option value="">Selecione...</option>
-                        <?php foreach (['Dinheiro','Cartão de Crédito','Cartão de Débito','PIX','Boleto'] as $fp): ?>
-                            <option value="<?= $fp ?>" <?= $v['forma_pagamento'] === $fp ? 'selected' : '' ?>><?= $fp ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Valor Total (R$) *</label>
-                    <input type="number" name="valor_total" class="form-control" step="0.01" min="0"
-                           value="<?= htmlspecialchars($v['valor_total']) ?>" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Status do Pedido *</label>
-                    <select name="status_pedido" class="form-select" required>
-                        <option value="">Selecione...</option>
-                        <?php foreach (['Pendente','Pago','Enviado','Entregue','Cancelado'] as $st): ?>
-                            <option value="<?= $st ?>" <?= $v['status_pedido'] === $st ? 'selected' : '' ?>><?= $st ?></option>
-                        <?php endforeach; ?>
+                <div class="col-md-6">
+                    <label>Forma de Pagamento</label>
+                    <select name="forma_pagamento" class="form-control" required>
+                        <option value="Pix" <?php echo $venda['forma_pagamento'] == 'Pix' ? 'selected' : ''; ?>>Pix</option>
+                        <option value="Cartão de Crédito" <?php echo $venda['forma_pagamento'] == 'Cartão de Crédito' ? 'selected' : ''; ?>>Cartão de Crédito</option>
+                        <option value="Cartão de Débito" <?php echo $venda['forma_pagamento'] == 'Cartão de Débito' ? 'selected' : ''; ?>>Cartão de Débito</option>
+                        <option value="Dinheiro" <?php echo $venda['forma_pagamento'] == 'Dinheiro' ? 'selected' : ''; ?>>Dinheiro</option>
                     </select>
                 </div>
             </div>
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn" style="background:#c0397a;color:#fff;">
-                    <i class="fa-solid fa-floppy-disk me-1"></i>Salvar
-                </button>
-                <a href="VendaList.php" class="btn btn-outline-secondary">
-                    <i class="fa-solid fa-xmark me-1"></i>Cancelar
-                </a>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label>Valor Total (R$)</label>
+                    <input type="number" step="0.01" name="valor_total" class="form-control" value="<?php echo htmlspecialchars($venda['valor_total']); ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label>Status do Pedido</label>
+                    <select name="status_pedido" class="form-control" required>
+                        <option value="Aprovado" <?php echo $venda['status_pedido'] == 'Aprovado' ? 'selected' : ''; ?>>Aprovado</option>
+                        <option value="Em Separação" <?php echo $venda['status_pedido'] == 'Em Separação' ? 'selected' : ''; ?>>Em Separação</option>
+                        <option value="Enviado" <?php echo $venda['status_pedido'] == 'Enviado' ? 'selected' : ''; ?>>Enviado</option>
+                    </select>
+                </div>
             </div>
+            <button type="submit" class="btn btn-success">Salvar</button>
+            <a href="VendaList.php" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 </div>
 
-<?php require_once '../footer.php'; ?>
+<?php include '../footer.php'; ?>

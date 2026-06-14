@@ -1,19 +1,69 @@
-<!doctype html>
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// URL Base dinâmica para evitar quebras de layout e links nas subpastas
+$base_url = "http://" . $_SERVER['HTTP_HOST'] . "/PWEB1_TRABALHO/admin/";
+
+// Bloqueia o acesso direto caso o usuário tente pular a tela de login
+if (!isset($_SESSION['usuario_logado'])) {
+    header("Location: " . $base_url . "login.php");
+    exit;
+}
+?>
+<!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Aula PHP</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
-        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
-        crossorigin="anonymous"
-        referrerpolicy="no-referrer" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elvi - Sistema de Gestão de Moda</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .navbar-brand { font-weight: 700; letter-spacing: 1px; }
+    </style>
 </head>
-
 <body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
     <div class="container">
-        <div class="row">
+        <a class="navbar-brand" href="<?php echo $base_url; ?>index.php">
+            <i class="fa-solid fa-shirt text-info me-2"></i>Elvi
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo $base_url; ?>index.php"><i class="fa-solid fa-house me-1"></i> Início</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo $base_url; ?>produto/ProdutoList.php"><i class="fa-solid fa-tags me-1"></i> Produtos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo $base_url; ?>fornecedor/FornecedorList.php"><i class="fa-solid fa-truck me-1"></i> Fornecedores</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo $base_url; ?>venda/VendaList.php"><i class="fa-solid fa-bag-shopping me-1"></i> Vendas</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-circle-user me-1"></i> <?php echo htmlspecialchars($_SESSION['usuario_nome'] ?? 'Admin'); ?>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="<?php echo $base_url; ?>usuario/UsuarioList.php">Gerenciar Usuários</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="<?php echo $base_url; ?>logout.php"><i class="fa-solid fa-right-from-bracket me-1"></i> Sair</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
