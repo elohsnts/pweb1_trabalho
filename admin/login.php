@@ -1,30 +1,30 @@
 <?php
 session_start();
-require 'db.class.php';
+require 'db.class.php'; //importa db
 
-$erro = '';
+$erro = ''; //msg erro, caso o usuário digite algo errado mais para a frente
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $login = $_POST['login'];
-    $senha = $_POST['senha'];
+    $senha = $_POST['senha']; //só funciona aqui
 
     try {
         $db = DB::conectar();
         $sql = "SELECT * FROM usuario WHERE login = ? AND senha = ?";
         $stmt = $db->prepare($sql);
         $stmt->execute([$login, $senha]);
-        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC); // procurar usuario que foi digitado, caso contrario erro
 
         if ($usuario) {
             $_SESSION['usuario_logado'] = true;
             $_SESSION['usuario_nome'] = $usuario['nome'];
-            header("Location: index.php");
+            header("Location: index.php"); //encontrado
             exit;
         } else {
-            $erro = "Login ou senha incorretos!";
+            $erro = "Login ou senha incorretos!"; //dados incorretos
         }
     } catch (Exception $e) {
-        $erro = "Erro de conexão: " . $e->getMessage();
+        $erro = "Erro de conexão: " . $e->getMessage(); 
     }
 }
 ?>
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { 
-            /* ALTERADO: Fundo azul claro com bolinhas */
+            /* Fundo*/
             background-color: #e6f0fa; 
             background-image: radial-gradient(#b3d1ff 3px, transparent 0);
             background-size: 30px 30px;
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="row justify-content-center">
             <div class="col-md-4 col-sm-8">
                 <div class="card shadow-lg">
-                    <div class="card-body p-4 text-center">
+                    <div class="card-body p-4 text-center"> <!--logo inicio-->
                         
                         <div class="mb-4">
                             <img src="logo-elvi.jpg" alt="Logo ELVI" class="logo-img mb-2">
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         
                         <?php if($erro): ?>
-                            <div class="alert alert-danger py-2 small text-start"><?php echo $erro; ?></div>
+                            <div class="alert alert-danger py-2 small text-start"><?php echo $erro; ?></div> <!--mensagem de erro login-->
                         <?php endif; ?>
                         
                         <form method="POST" class="text-start">

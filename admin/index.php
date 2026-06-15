@@ -4,14 +4,14 @@ include 'db.class.php';
 include 'header.php'; 
 
 $db = DB::conectar();
-// Busca os últimos 6 produtos cadastrados para compor a vitrine
+// Busca os últimos 6 produtos cadastrados para compor a vitrine, carrossel
 $stmt = $db->prepare("SELECT * FROM produto ORDER BY id DESC LIMIT 6");
 $stmt->execute();
 $produtos_vitrine = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <style>
-    /* Moldura elegante para as fotos do estoque de roupas */
+    /* Moldura para as fotos do estoque de roupas */
     .stock-preview-img {
         width: 100%;
         height: 280px;
@@ -50,12 +50,12 @@ $produtos_vitrine = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="row align-items-center mb-4 pb-3 border-bottom">
     <div class="col-md-8 col-sm-12">
         <h2 class="fw-bold m-0" style="color: #00274c;">Painel Administrativo - Elvi</h2>
-        <p class="text-muted m-0 small">Visão geral do gerenciamento da loja.</p>
+        <p class="text-muted m-0 small">Visão geral do gerenciamento da loja.</p> <!--titulos da pg principal -->
     </div>
     <div class="col-md-4 col-sm-12 text-md-end text-start mt-3 mt-md-0">
         <a href="venda/VendaList.php" class="btn btn-dark px-4 py-2 fw-bold shadow-sm" style="background-color: #00274c; border: none;">
             <i class="fa-solid fa-cart-plus me-1"></i> Registrar Nova Venda
-        </a>
+        </a> <!-- botão de venda-->
     </div>
 </div>
 
@@ -73,7 +73,7 @@ $produtos_vitrine = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
     </div>
-
+<!--blocos de estoque e fornecedor -->
     <div class="col-md-4 mb-3">
         <div class="card shadow-sm border-0 border-start border-warning border-4">
             <div class="card-body">
@@ -109,15 +109,15 @@ $produtos_vitrine = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <h4 class="fw-bold mb-3" style="color: #00274c;">Bem-vindo(a) ao sistema da Loja Elvi!</h4>
             <p class="text-muted mb-5">Utilize o menu superior para navegar entre os módulos de cadastro e gerenciar suas vendas em tempo real.</p>
             
-            <div class="row row-cols-1 row-cols-md-3 g-4 text-start">
-                <?php if (count($produtos_vitrine) > 0): ?>
-                    <?php foreach ($produtos_vitrine as $prod): ?>
+            <div class="row row-cols-1 row-cols-md-3 g-4 text-start"> <!-- cria a "vitrine" usando o sistema de grid do Bootstrap-->
+                <?php  if (count($produtos_vitrine) > 0): ?> <!-- se há produto cadatsrado, roda--> 
+                    <?php foreach ($produtos_vitrine as $prod): ?> <!--Inicia o laço e cria o card para a vitrine dos 6 itens -->
                         <div class="col">
-                            <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden card-vitrine bg-light">
+                            <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden card-vitrine bg-light"> <!-- card -->
                                 
-                                <?php if (!empty($prod['imagem']) && file_exists('uploads/' . $prod['imagem'])): ?>
+                                <?php if (!empty($prod['imagem']) && file_exists('uploads/' . $prod['imagem'])): ?> <!-- se caso não houver imagem, aprece as caixas -->
                                     <img src="uploads/<?php echo $prod['imagem']; ?>" alt="<?php echo htmlspecialchars($prod['nome_peca']); ?>" class="stock-preview-img">
-                                <?php else: ?>
+                                <?php else: ?> 
                                     <div class="placeholder-vitrine border-bottom">
                                         <div class="text-center">
                                             <i class="fa-solid fa-shirt fa-3x opacity-25 mb-2"></i>
@@ -129,7 +129,7 @@ $produtos_vitrine = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="card-body p-3 bg-white">
                                     <span class="badge bg-secondary float-end"><?php echo htmlspecialchars($prod['tamanho']); ?></span>
                                     <h5 class="card-title fw-bold text-truncate mb-1" style="color: #00274c; max-width: 80%;">
-                                        <?php echo htmlspecialchars($prod['nome_peca']); ?>
+                                        <?php echo htmlspecialchars($prod['nome_peca']); ?> <!-- etiqueta do cartão de roupa-->
                                     </h5>
                                     <p class="text-muted small mb-2"><i class="fa-solid fa-palette me-1"></i> Cor: <?php echo htmlspecialchars($prod['cor_predominante']); ?></p>
                                     <div class="d-flex justify-content-between align-items-center mt-3">
@@ -137,7 +137,7 @@ $produtos_vitrine = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <a href="produto/ProdutoForm.php?id=<?php echo $prod['id']; ?>" class="btn btn-sm btn-outline-secondary">
                                             <i class="fa-solid fa-eye"></i> Detalhes
                                         </a>
-                                    </div>
+                                    </div> <!--Detalhes da peça, pg principal-->
                                 </div>
 
                             </div>
@@ -150,7 +150,7 @@ $produtos_vitrine = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <p class="mb-0 text-muted fw-semibold">Nenhum produto cadastrado no momento para exibir na vitrine.</p>
                         </div>
                     </div>
-                <?php endif; ?>
+                <?php endif; ?> <!--centraliza cards-->
             </div>
             
         </div>
