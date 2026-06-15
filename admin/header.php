@@ -23,14 +23,24 @@ if (!isset($_SESSION['usuario_logado'])) {
     <style>
         body { background-color: #f8f9fa; }
         .navbar-brand { font-weight: 700; letter-spacing: 1px; }
+        
+        /* Estilização customizada para a miniatura da logo no menu */
+        .navbar-logo-circle {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #ffffff; /* Destaca a logo contra o fundo escuro do menu */
+        }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
     <div class="container">
-        <a class="navbar-brand" href="<?php echo $base_url; ?>index.php">
-            <i class="fa-solid fa-shirt text-info me-2"></i>Elvi
+        <a class="navbar-brand d-flex align-items-center gap-2" href="<?php echo $base_url; ?>index.php">
+            <img src="<?php echo $base_url; ?>logo-elvi.jpg" alt="Logo Elvi" class="navbar-logo-circle">
+            <span>Elvi</span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>

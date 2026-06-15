@@ -18,6 +18,15 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (isset($_GET['deletar'])) {
     $id = $_GET['deletar'];
+    
+    // Apaga o arquivo físico de imagem associado para não acumular lixo no servidor
+    $imgStmt = $db->prepare("SELECT imagem FROM produto WHERE id = ?");
+    $imgStmt->execute([$id]);
+    $imgProd = $imgStmt->fetch(PDO::FETCH_ASSOC);
+    if (!empty($imgProd['imagem']) && file_exists('../uploads/' . $imgProd['imagem'])) {
+        unlink('../uploads/' . $imgProd['imagem']);
+    }
+
     $del = $db->prepare("DELETE FROM produto WHERE id = ?");
     $del->execute([$id]);
     header("Location: ProdutoList.php");
@@ -27,7 +36,7 @@ if (isset($_GET['deletar'])) {
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Gerenciar Produtos</h2>
-    <a href="ProdutoForm.php" class="btn btn-primary">+ Novo Produto</a>
+    <a href="ProdutoForm.php" class="btn btn-primary fw-bold"><i class="fa-solid fa-plus me-1"></i> Novo Produto</a>
 </div>
 
 <form method="GET" class="mb-4">
@@ -38,32 +47,47 @@ if (isset($_GET['deletar'])) {
 </form>
 
 <div class="card shadow-sm">
-    <div class="card-body">
-        <table class="table table-hover">
-            <thead>
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
                 <tr>
-                    <th>ID</th>
+                    <th style="width: 80px;">ID</th>
+                    <th style="width: 100px;">Foto</th>
                     <th>Nome da Peça</th>
                     <th>Tamanho</th>
                     <th>Cor</th>
                     <th>Preço de Venda</th>
-                    <th>Ações</th>
+                    <th class="text-center" style="width: 150px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($produtos as $p): ?>
                 <tr>
                     <td><?php echo $p['id']; ?></td>
-                    <td><?php echo htmlspecialchars($p['nome_peca']); ?></td>
-                    <td><span class="badge bg-secondary"><?php echo htmlspecialchars($p['tamanho']); ?></span></td>
+                    <td>
+                        <?php if (!empty($p['imagem']) && file_exists('../uploads/' . $p['imagem'])): ?>
+                            <img src="../uploads/<?php echo $p['imagem']; ?>" alt="Foto do Produto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="border shadow-sm">
+                        <?php else: ?>
+                            <div class="bg-light text-muted d-flex align-items-center justify-content-center border" style="width: 50px; height: 50px; border-radius: 8px;">
+                                <i class="fa-solid fa-shirt opacity-40"></i>
+                            </div>
+                        <?php endif; ?>
+                    </td>
+                    <td class="fw-bold text-secondary"><?php echo htmlspecialchars($p['nome_peca']); ?></td>
+                    <td><span class="badge bg-secondary px-2 py-1"><?php echo htmlspecialchars($p['tamanho']); ?></span></td>
                     <td><?php echo htmlspecialchars($p['cor_predominante']); ?></td>
                     <td class="text-success fw-bold">R$ <?php echo number_format($p['preco_venda'], 2, ',', '.'); ?></td>
-                    <td>
-                        <a href="ProdutoForm.php?id=<?php echo $p['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
-                        <a href="ProdutoList.php?deletar=<?php echo $p['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja excluir esta peça?');">Excluir</a>
+                    <td class="text-center">
+                        <a href="ProdutoForm.php?id=<?php echo $p['id']; ?>" class="btn btn-sm btn-warning text-white"><i class="fa-solid fa-pen-to-square"></i></a>
+                        <a href="ProdutoList.php?deletar=<?php echo $p['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja excluir esta peça?');"><i class="fa-solid fa-trash-can"></i></a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
+                <?php if (count($produtos) === 0): ?>
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Nenhum produto em estoque.</td>
+                </tr>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>

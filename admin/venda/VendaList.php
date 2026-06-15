@@ -5,9 +5,14 @@ include '../header.php';
 $db = DB::conectar();
 $busca = $_GET['busca'] ?? '';
 
-$sql = "SELECT * FROM venda";
+// INNER JOIN adicionado para buscar o nome do produto vinculado à venda
+$sql = "SELECT v.*, p.nome_peca FROM venda v 
+        INNER JOIN produto p ON v.produto_id = p.id";
+
 if ($busca) {
-    $sql .= " WHERE status_pedido LIKE :busca OR forma_pagamento LIKE :busca";
+    $sql .= " WHERE v.status_pedido LIKE :busca 
+              OR v.forma_pagamento LIKE :busca 
+              OR p.nome_peca LIKE :busca";
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':busca', "%$busca%");
 } else {
@@ -32,7 +37,7 @@ if (isset($_GET['deletar'])) {
 
 <form method="GET" class="mb-4">
     <div class="input-group w-50">
-        <input type="text" name="busca" class="form-control" placeholder="Buscar por status ou pagamento..." value="<?php echo htmlspecialchars($busca); ?>">
+        <input type="text" name="busca" class="form-control" placeholder="Buscar por produto, status ou pagamento..." value="<?php echo htmlspecialchars($busca); ?>">
         <button class="btn btn-outline-secondary" type="submit">Pesquisar</button>
     </div>
 </form>
@@ -43,29 +48,35 @@ if (isset($_GET['deletar'])) {
             <thead>
                 <tr>
                     <th>Data da Compra</th>
-                    <th>Forma de Pagamento</th>
+                    <th>Produto Vendido</th> <th>Forma de Pagamento</th>
                     <th>Valor Total</th>
                     <th>Status do Pedido</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($vendas as $v): ?>
-                <tr>
-                    <td><?php echo date('d/m/Y', strtotime($v['data_compra'])); ?></td>
-                    <td><?php echo htmlspecialchars($v['forma_pagamento']); ?></td>
-                    <td class="fw-bold text-primary">R$ <?php echo number_format($v['valor_total'], 2, ',', '.'); ?></td>
-                    <td>
-                        <span class="badge <?php echo $v['status_pedido'] == 'Enviado' ? 'bg-success' : ($v['status_pedido'] == 'Aprovado' ? 'bg-primary' : 'bg-warning text-dark'); ?>">
-                            <?php echo htmlspecialchars($v['status_pedido']); ?>
-                        </span>
-                    </td>
-                    <td>
-                        <a href="VendaForm.php?id=<?php echo $v['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
-                        <a href="VendaList.php?deletar=<?php echo $v['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza?');">Excluir</a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+                <?php if (count($vendas) > 0): ?>
+                    <?php foreach ($vendas as $v): ?>
+                    <tr>
+                        <td><?php echo date('d/m/Y', strtotime($v['data_compra'])); ?></td>
+                        <td class="fw-semibold text-dark"><?php echo htmlspecialchars($v['nome_peca']); ?></td> <td><?php echo htmlspecialchars($v['forma_pagamento']); ?></td>
+                        <td class="fw-bold text-success">R$ <?php echo number_format($v['valor_total'], 2, ',', '.'); ?></td>
+                        <td>
+                            <span class="badge <?php echo $v['status_pedido'] == 'Enviado' ? 'bg-success' : ($v['status_pedido'] == 'Aprovado' ? 'bg-primary' : 'bg-warning text-dark'); ?>">
+                                <?php echo htmlspecialchars($v['status_pedido']); ?>
+                            </span>
+                        </td>
+                        <td>
+                            <a href="VendaForm.php?id=<?php echo $v['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
+                            <a href="VendaList.php?deletar=<?php echo $v['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza?');">Excluir</a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Nenhum registro de venda encontrado.</td>
+                    </tr>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
