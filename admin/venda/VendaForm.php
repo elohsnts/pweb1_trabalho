@@ -1,57 +1,38 @@
 <?php
-// ==========================================
-// CONFIGURAÇÕES E DEPENDÊNCIAS
-// ==========================================
 include '../db.class.php';
 include '../header.php';
 
-// Estabelece a conexão com a base de dados
 $db = DB::conectar();
-
-// Captura o ID via GET para determinar se é uma Edição ou novo Registro
 $id = $_GET['id'] ?? null;
-
-// Inicializa o array com valores padrão. Note o uso inteligente de date('Y-m-d') 
-// para preencher automaticamente o campo com a data atual do dia no formato correto do HTML5.
 $venda = ['data_compra' => date('Y-m-d'), 'forma_pagamento' => 'Pix', 'valor_total' => '', 'status_pedido' => 'Aprovado', 'produto_id' => ''];
 
-// CHAVE ESTRANGEIRA (RELACIONAMENTO): Busca os produtos para alimentar o <select> do formulário.
-// Traz dados extras como tamanho e preço para facilitar a identificação do usuário.
+// Busca todos os produtos cadastrados para listar na caixa de seleção
 $stmt_produtos = $db->prepare("SELECT id, nome_peca, tamanho, preco_venda FROM produto ORDER BY nome_peca ASC");
 $stmt_produtos->execute();
 $produtos = $stmt_produtos->fetchAll(PDO::FETCH_ASSOC);
 
-// Se houver ID na URL, carrega os dados da venda correspondente para edição
 if ($id) {
-    // Uso de Prepared Statements com "?" para evitar ataques de SQL Injection
     $stmt = $db->prepare("SELECT * FROM venda WHERE id = ?");
     $stmt->execute([$id]);
     $venda = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Coleta dos dados submetidos pelo usuário
     $data = $_POST['data_compra'];
     $pagamento = $_POST['forma_pagamento'];
     $valor = $_POST['valor_total'];
     $status = $_POST['status_pedido'];
-    $produto_id = $_POST['produto_id']; // ID do produto que faz o relacionamento entre as tabelas
+    $produto_id = $_POST['produto_id']; // Recebe o id do produto selecionado
 
-    // PERSISTÊNCIA NO BANCO DE DADOS
     if ($id) {
-        // Se o ID existir, executa a atualização (UPDATE)
         $sql = "UPDATE venda SET data_compra=?, forma_pagamento=?, valor_total=?, status_pedido=?, produto_id=? WHERE id=?";
         $stmt = $db->prepare($sql);
         $stmt->execute([$data, $pagamento, $valor, $status, $produto_id, $id]);
     } else {
-        // Se não houver ID, realiza a inserção de um novo registro (INSERT)
         $sql = "INSERT INTO venda (data_compra, forma_pagamento, valor_total, status_pedido, produto_id) VALUES (?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
         $stmt->execute([$data, $pagamento, $valor, $status, $produto_id]);
     }
-    
-    // Redireciona para a listagem para evitar duplicação de dados ao atualizar a página (F5)
     header("Location: VendaList.php");
     exit;
 }
@@ -64,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <div class="card shadow-sm">
     <div class="card-body">
         <form method="POST" class="needs-validation" novalidate>
-            
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Produto Vendido <span class="text-danger">*</span></label>
@@ -129,25 +109,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <script>
 (function () {
     'use strict'
-    
-    // Captura os formulários que utilizam a classe do Bootstrap para validação
     var forms = document.querySelectorAll('.needs-validation')
-    
     Array.prototype.slice.call(forms).forEach(function (form) {
         form.addEventListener('submit', function (event) {
-            
-            // Se as restrições HTML (required, min, etc.) não forem cumpridas:
             if (!form.checkValidity()) {
-                event.preventDefault() // Impede a submissão dos dados para o backend PHP
+                event.preventDefault()
                 event.stopPropagation()
                 
-                // MELHORIA DE UX: Encontra o primeiro input com erro e joga o foco do teclado nele
                 var firstInvalid = form.querySelector(':invalid');
                 if (firstInvalid) {
                     firstInvalid.focus();
                 }
             }
-            // Adiciona a classe visual que exibe as mensagens em verde (válido) ou vermelho (inválido)
             form.classList.add('was-validated')
         }, false)
     })
