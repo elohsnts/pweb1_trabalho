@@ -2,33 +2,51 @@
 include '../db.class.php';
 include '../header.php';
 
+// Conecta ao banco de dados usando o método estático da classe DB
 $db = DB::conectar();
+
+// Captura o termo de pesquisa enviado via método GET (se houver). Padrão é vazio.
 $busca = $_GET['busca'] ?? '';
 
+// Montagem dinâmica da query SQL
 $sql = "SELECT * FROM produto";
 if ($busca) {
+    // Se houver busca, adiciona a cláusula WHERE usando Named Parameters (:busca) para segurança
     $sql .= " WHERE nome_peca LIKE :busca OR cor_predominante LIKE :busca";
     $stmt = $db->prepare($sql);
+    
+    // O operador LIKE exige as porcentagens (%) para buscar trechos de palavras (ex: "azul" acha "azul-marinho")
     $stmt->bindValue(':busca', "%$busca%");
 } else {
+    // Caso contrário, prepara a busca limpa de todos os registros
     $stmt = $db->prepare($sql);
 }
 $stmt->execute();
+
+// Retorna uma matriz com todos os produtos encontrados
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+
+// LÓGICA DE EXCLUSÃO DE REGISTROS
 if (isset($_GET['deletar'])) {
     $id = $_GET['deletar'];
     
-    // Apaga o arquivo físico de imagem associado para não acumular lixo no servidor
+    // BOA PRÁTICA: Antes de apagar o registro do banco, buscamos o nome da imagem associada.
     $imgStmt = $db->prepare("SELECT imagem FROM produto WHERE id = ?");
-    $imgStmt->execute([$id]);
+    $imgStmt->execute([id]);
     $imgProd = $imgStmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Se o produto possuir uma imagem registrada e ela realmente existir fisicamente na pasta de uploads...
     if (!empty($imgProd['imagem']) && file_exists('../uploads/' . $imgProd['imagem'])) {
+        // ... a função unlink() deleta o arquivo físico do servidor, evitando acúmulo de lixo em disco
         unlink('../uploads/' . $imgProd['imagem']);
     }
 
+    // Após limpar o arquivo do servidor, deleta a linha correspondente no Banco de Dados
     $del = $db->prepare("DELETE FROM produto WHERE id = ?");
     $del->execute([$id]);
+    
+    // Redireciona para a mesma página limpa para atualizar a lista e remover o parâmetro '?deletar=' da URL
     header("Location: ProdutoList.php");
     exit;
 }
@@ -47,8 +65,7 @@ if (isset($_GET['deletar'])) {
 </form>
 
 <div class="card shadow-sm">
-    <div class="card-body p-0">
-        <table class="table table-hover align-middle mb-0">
+    <div class="card-body p-0"> <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th style="width: 80px;">ID</th>
@@ -76,13 +93,17 @@ if (isset($_GET['deletar'])) {
                     <td class="fw-bold text-secondary"><?php echo htmlspecialchars($p['nome_peca']); ?></td>
                     <td><span class="badge bg-secondary px-2 py-1"><?php echo htmlspecialchars($p['tamanho']); ?></span></td>
                     <td><?php echo htmlspecialchars($p['cor_predominante']); ?></td>
+                    
                     <td class="text-success fw-bold">R$ <?php echo number_format($p['preco_venda'], 2, ',', '.'); ?></td>
+                    
                     <td class="text-center">
                         <a href="ProdutoForm.php?id=<?php echo $p['id']; ?>" class="btn btn-sm btn-warning text-white"><i class="fa-solid fa-pen-to-square"></i></a>
+                        
                         <a href="ProdutoList.php?deletar=<?php echo $p['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja excluir esta peça?');"><i class="fa-solid fa-trash-can"></i></a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
+                
                 <?php if (count($produtos) === 0): ?>
                 <tr>
                     <td colspan="7" class="text-center text-muted py-4">Nenhum produto em estoque.</td>
