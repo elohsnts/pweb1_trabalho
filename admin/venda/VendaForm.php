@@ -11,28 +11,36 @@ $stmt_produtos = $db->prepare("SELECT id, nome_peca, tamanho, preco_venda FROM p
 $stmt_produtos->execute();
 $produtos = $stmt_produtos->fetchAll(PDO::FETCH_ASSOC);
 
+// CARREGAR DADOS PARA EDIÇÃO 
 if ($id) {
+    // Se existir um ID na URL, busca os dados da venda atual para preencher o formulário
     $stmt = $db->prepare("SELECT * FROM venda WHERE id = ?");
     $stmt->execute([$id]);
     $venda = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+// PROCESSAR FORMULÁRIO (SALVAR VENDA) 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Captura os dados enviados pelo formulário de venda
     $data = $_POST['data_compra'];
     $pagamento = $_POST['forma_pagamento'];
     $valor = $_POST['valor_total'];
     $status = $_POST['status_pedido'];
-    $produto_id = $_POST['produto_id']; // Recebe o id do produto selecionado
+    $produto_id = $_POST['produto_id']; 
 
     if ($id) {
+        // Bloco de Edição: Se a venda já existe, atualiza os dados dela no banco
         $sql = "UPDATE venda SET data_compra=?, forma_pagamento=?, valor_total=?, status_pedido=?, produto_id=? WHERE id=?";
         $stmt = $db->prepare($sql);
         $stmt->execute([$data, $pagamento, $valor, $status, $produto_id, $id]);
     } else {
+        // Bloco de Cadastro: Se for uma nova venda, insere o registro no banco
         $sql = "INSERT INTO venda (data_compra, forma_pagamento, valor_total, status_pedido, produto_id) VALUES (?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
         $stmt->execute([$data, $pagamento, $valor, $status, $produto_id]);
     }
+    
+    // Redireciona para a lista de vendas e encerra o script
     header("Location: VendaList.php");
     exit;
 }

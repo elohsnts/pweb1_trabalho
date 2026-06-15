@@ -2,48 +2,39 @@
 include '../db.class.php';
 include '../header.php';
 
-// Estabelece a conexão com a base de dados
 $db = DB::conectar();
-
-// Captura o ID via GET. Se existir, indica Edição. Se não, indica um novo Cadastro.
 $id = $_GET['id'] ?? null;
-
-// Inicializa a estrutura do array $usuario com strings vazias.
-// Essencial para o modo Cadastro não disparar erros de chaves inexistentes no HTML.
 $usuario = ['nome' => '', 'telefone' => '', 'email' => '', 'login' => '', 'senha' => ''];
 
-// Se o ID foi passado na URL, busca as informações do usuário específico (Modo Edição)
+// Traz de volta do banco os dados de um produto já cadastrado para preencher o formulário (Modo Edição)
 if ($id) {
-    // Uso correto de prepared statements com o marcador "?" para blindar contra SQL Injection
     $stmt = $db->prepare("SELECT * FROM usuario WHERE id = ?");
     $stmt->execute([$id]);
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-
-// PROCESSAMENTO DO FORMULÁRIO (POST)
+// CAPTURA DE DADOS: Se o formulário foi enviado, guarda em variáveis tudo o que o usuário digitou nos campos.
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Coleta as strings vindas dos campos do formulário
+    // Captura os dados vindos do formulário
     $nome = $_POST['nome'];
     $telefone = $_POST['telefone'];
     $email = $_POST['email'];
     $login = $_POST['login'];
     $senha = $_POST['senha'];
 
-    // PERSISTÊNCIA NO BANCO DE DADOS
     if ($id) {
-        // Se o ID existe, atualiza os dados do usuário correspondente (UPDATE)
+        // Bloco de Edição: Se já existe um ID, atualiza o usuário no banco             
         $sql = "UPDATE usuario SET nome=?, telefone=?, email=?, login=?, senha=? WHERE id=?";
         $stmt = $db->prepare($sql);
         $stmt->execute([$nome, $telefone, $email, $login, $senha, $id]);
     } else {
-        // Se não há ID, registra um novo usuário no sistema (INSERT)
+        // Bloco de Cadastro: Se não existe ID, insere um novo usuário no banco
         $sql = "INSERT INTO usuario (nome, telefone, email, login, senha) VALUES (?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
         $stmt->execute([$nome, $telefone, $email, $login, $senha]);
     }
-    
-    // Redireciona de volta para a lista de usuários, limpando o fluxo de envio do POST
+
+    // Redireciona para a lista de usuários e fecha o script
     header("Location: UsuarioList.php");
     exit;
 }
@@ -56,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <div class="card shadow-sm">
     <div class="card-body">
         <form method="POST">
-            
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">Nome Completo</label>
@@ -67,7 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <input type="text" name="telefone" class="form-control" value="<?php echo htmlspecialchars($usuario['telefone']); ?>" required>
                 </div>
             </div>
-            
             <div class="row mb-3">
                 <div class="col-md-4">
                     <label class="form-label">E-mail</label>
@@ -82,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <input type="password" name="senha" class="form-control" value="<?php echo htmlspecialchars($usuario['senha']); ?>" required>
                 </div>
             </div>
-            
             <button type="submit" class="btn btn-success">Salvar</button>
             <a href="UsuarioList.php" class="btn btn-secondary">Cancelar</a>
         </form>

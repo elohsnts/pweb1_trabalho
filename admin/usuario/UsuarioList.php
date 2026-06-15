@@ -1,42 +1,34 @@
 <?php
-
 include '../db.class.php';
 include '../header.php';
 
-// Estabelece a conexão estática com a base de dados através da classe PDO empacotada
 $db = DB::conectar();
-
-// Armazena o termo pesquisado usando o operador de coalescência nula (padrão é vazio)
 $busca = $_GET['busca'] ?? '';
 
-// Construção da instrução SQL para busca geral ou com critérios de filtragem
 $sql = "SELECT * FROM usuario";
 if ($busca) {
-    // Se houver busca, adiciona cláusulas OR usando Named Parameters (:busca) para evitar injeções SQL
+    // Se houver busca, filtra por nome ou login usando LIKE (busca parcial)
     $sql .= " WHERE nome LIKE :busca OR login LIKE :busca";
     $stmt = $db->prepare($sql);
-    
-    // Vincula a variável à instrução SQL envolvendo o termo com '%' para permitir busca parcial
     $stmt->bindValue(':busca', "%$busca%");
 } else {
-    // Prepara a consulta limpa para trazer todos os registros caso o filtro esteja vazio
+    // Se não houver busca, prepara para trazer todos os usuários
     $stmt = $db->prepare($sql);
 }
+// Executa a consulta e guarda a lista de usuários na variável $usuarios
 $stmt->execute();
-
-// Retorna todos os usuários encontrados em formato de array associativo
 $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-// OPERAÇÃO DE EXCLUSÃO DE USUÁRIO
 if (isset($_GET['deletar'])) {
+    // Se a URL tiver o parâmetro ?deletar=ID, captura o ID enviado
     $id = $_GET['deletar'];
     
-    // Executa diretamente a remoção através de Prepared Statements informando o ID por posição (?)
+    // Deleta o registro do usuário diretamente do banco de dados
     $del = $db->prepare("DELETE FROM usuario WHERE id = ?");
     $del->execute([$id]);
     
-    // Redireciona para a própria página limpa, eliminando a query string '?deletar=' da barra de endereços
+    // Redireciona de volta para a lista e encerra a execução do script
     header("Location: UsuarioList.php");
     exit;
 }
@@ -71,15 +63,12 @@ if (isset($_GET['deletar'])) {
                 <?php foreach ($usuarios as $u): ?>
                 <tr>
                     <td><?php echo $u['id']; ?></td>
-                    
                     <td><?php echo htmlspecialchars($u['nome']); ?></td>
                     <td><?php echo htmlspecialchars($u['telefone']); ?></td>
                     <td><?php echo htmlspecialchars($u['email']); ?></td>
                     <td><?php echo htmlspecialchars($u['login']); ?></td>
-                    
                     <td>
                         <a href="UsuarioForm.php?id=<?php echo $u['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
-                        
                         <a href="UsuarioList.php?deletar=<?php echo $u['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja remover este usuário?');">Excluir</a>
                     </td>
                 </tr>

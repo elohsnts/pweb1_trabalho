@@ -5,6 +5,9 @@ include '../header.php';
 $db = DB::conectar();
 $busca = $_GET['busca'] ?? '';
 
+// Define a consulta base para listar todos os produtos.
+// Se houver um termo de busca, filtra por 'nome_peca' ou 'cor_predominante' usando LIKE.
+// Executa a consulta de forma segura (Prepared Statement) e armazena os resultados em $produtos.
 $sql = "SELECT * FROM produto";
 if ($busca) {
     $sql .= " WHERE nome_peca LIKE :busca OR cor_predominante LIKE :busca";
@@ -16,6 +19,11 @@ if ($busca) {
 $stmt->execute();
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Verifica se foi solicitada a exclusão de um produto via URL (?deletar=ID).
+// 1. Busca o nome da imagem do produto no banco de dados.
+// 2. Se o arquivo da imagem existir na pasta '../uploads/', remove-o do servidor (unlink).
+// 3. Deleta o registro do produto do banco de dados e redireciona para a lista.
+ 
 if (isset($_GET['deletar'])) {
     $id = $_GET['deletar'];
     

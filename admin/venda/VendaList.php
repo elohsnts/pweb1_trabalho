@@ -2,49 +2,40 @@
 include '../db.class.php';
 include '../header.php';
 
-// Inicializa a conexão estática com o banco de dados
 $db = DB::conectar();
-
-// Armazena o termo de filtragem vindo da URL via método GET (se vazio, inicia string vazia)
 $busca = $_GET['busca'] ?? '';
 
-// RELACIONAMENTO ENTRE TABELAS (INNER JOIN): 
-// Une as informações da tabela 'venda' (apelidada de v) com a tabela 'produto' (apelidada de p).
-// O critério de união é a correspondência entre a chave estrangeira (v.produto_id) e a chave primária (p.id).
-// Isso permite que a consulta retorne campos como 'p.nome_peca' diretamente para a tabela.
+// INNER JOIN adicionado para buscar o nome do produto vinculado à venda
 $sql = "SELECT v.*, p.nome_peca FROM venda v 
         INNER JOIN produto p ON v.produto_id = p.id";
 
+// FILTRO E BUSCA DE VENDAS 
 if ($busca) {
-    // Caso haja busca, estende a query SQL usando parâmetros nomeados (:busca) para segurança.
-    // O operador 'OR' permite estender o filtro tanto para as colunas da venda quanto do produto.
+    // Se houver busca, filtra pelo status da venda, forma de pagamento ou nome do produto associado
     $sql .= " WHERE v.status_pedido LIKE :busca 
               OR v.forma_pagamento LIKE :busca 
               OR p.nome_peca LIKE :busca";
     $stmt = $db->prepare($sql);
-    
-    // Vincula o parâmetro envolvendo o termo com os caracteres coringa (%) para busca parcial amigável
     $stmt->bindValue(':busca', "%$busca%");
 } else {
-    // Prepara a listagem geral sem restrições de filtro
+    // Se não houver busca, prepara a consulta base (traz todas as vendas)
     $stmt = $db->prepare($sql);
 }
+// Executa a consulta no banco e guarda a lista de vendas na variável $vendas
 $stmt->execute();
-
-// Coleta todos os registros combinados no formato de matriz associativa
 $vendas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// ==========================================
-// OPERAÇÃO DE EXCLUSÃO DE VENDA
-// ==========================================
+
+// --- BLOCO 2: EXCLUSÃO DE VENDA ---
 if (isset($_GET['deletar'])) {
+    // Se a URL tiver o parâmetro ?deletar=ID, captura o ID da venda
     $id = $_GET['deletar'];
     
-    // Remove o registro da venda utilizando o ID enviado por parâmetro posicional seguro (?)
+    // Deleta o registro da venda diretamente do banco de dados
     $del = $db->prepare("DELETE FROM venda WHERE id = ?");
     $del->execute([$id]);
     
-    // Redireciona para o script sem parâmetros na barra de endereços para evitar repetição da exclusão
+    // Redireciona de volta para a lista de vendas e encerra o script
     header("Location: VendaList.php");
     exit;
 }
@@ -68,8 +59,7 @@ if (isset($_GET['deletar'])) {
             <thead>
                 <tr>
                     <th>Data da Compra</th>
-                    <th>Produto Vendido</th> 
-                    <th>Forma de Pagamento</th>
+                    <th>Produto Vendido</th> <th>Forma de Pagamento</th>
                     <th>Valor Total</th>
                     <th>Status do Pedido</th>
                     <th>Ações</th>
@@ -77,15 +67,11 @@ if (isset($_GET['deletar'])) {
             </thead>
             <tbody>
                 <?php if (count($vendas) > 0): ?>
-                    <?php foreach ($vendas as $v): ?>
+                    <?php foreach ($vendas as $v): ?> <!-- percorre (repete) uma lista ou array de dados automaticamente, item por item. -->
                     <tr>
                         <td><?php echo date('d/m/Y', strtotime($v['data_compra'])); ?></td>
-                        
-                        <td class="fw-semibold text-dark"><?php echo htmlspecialchars($v['nome_peca']); ?></td> 
-                        <td><?php echo htmlspecialchars($v['forma_pagamento']); ?></td>
-                        
+                        <td class="fw-semibold text-dark"><?php echo htmlspecialchars($v['nome_peca']); ?></td> <td><?php echo htmlspecialchars($v['forma_pagamento']); ?></td>
                         <td class="fw-bold text-success">R$ <?php echo number_format($v['valor_total'], 2, ',', '.'); ?></td>
-                        
                         <td>
                             <span class="badge <?php echo $v['status_pedido'] == 'Enviado' ? 'bg-success' : ($v['status_pedido'] == 'Aprovado' ? 'bg-primary' : 'bg-warning text-dark'); ?>">
                                 <?php echo htmlspecialchars($v['status_pedido']); ?>
@@ -93,7 +79,6 @@ if (isset($_GET['deletar'])) {
                         </td>
                         <td>
                             <a href="VendaForm.php?id=<?php echo $v['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
-                            
                             <a href="VendaList.php?deletar=<?php echo $v['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza?');">Excluir</a>
                         </td>
                     </tr>
