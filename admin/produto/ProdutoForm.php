@@ -6,12 +6,14 @@ $db = DB::conectar();
 $id = $_GET['id'] ?? null;
 $produto = ['nome_peca' => '', 'tamanho' => 'M', 'cor_predominante' => '', 'preco_venda' => '', 'imagem' => ''];
 
+// Traz de volta do banco os dados de um produto já cadastrado para preencher o formulário (Modo Edição)
 if ($id) {
     $stmt = $db->prepare("SELECT * FROM produto WHERE id = ?");
     $stmt->execute([$id]);
     $produto = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+// CAPTURA DE DADOS: Se o formulário foi enviado, guarda em variáveis tudo o que o usuário digitou nos campos.
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nome = $_POST['nome_peca'];
     $tamanho = $_POST['tamanho'];
@@ -38,6 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         move_uploaded_file($_FILES['imagem']['tmp_name'], $diretorio_destino . $nome_imagem);
     }
 
+// SALVAR NO BANCO: Se o produto já tem ID, atualiza os dados dele (UPDATE). 
+// Se não tem ID, cadastra como um produto novo (INSERT). Depois, volta para a listagem.
     if ($id) {
         $sql = "UPDATE produto SET nome_peca=?, tamanho=?, cor_predominante=?, preco_venda=?, imagem=? WHERE id=?";
         $stmt = $db->prepare($sql);
@@ -94,7 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-bold">Cor Predominante <span class="text-danger">*</span></label>
-                            <input type="text" name="cor_predominante" class="form-control" value="<?php echo htmlspecialchars($produto['cor_predominante']); ?>" required>
+                            <input type="text" name="cor_predominante" class="form-control" value="<?php echo htmlspecialchars($produto['cor_predominante']); ?>" required> 
+                            <!--htmlspecialchars usado para impedir que textos digitados por usuários quebrem o seu site ou virem vírus (ataques de hackers) -->
                             <div class="invalid-feedback">Defina a cor principal.</div>
                         </div>
                     </div>
@@ -142,6 +147,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 </div>
 
+<!-- Validação de formulários do Bootstrap + Suporte a Abas (Tabs)
+ 1. Bloqueia o envio do formulário se houver campos inválidos.
+ 2. Se o campo com erro estiver escondido em uma aba, ativa/mostra essa aba automaticamente.
+ 3. Coloca o foco do teclado no primeiro campo com erro e aplica o visual de validação do Bootstrap.-->
 <script>
 (function () {
     'use strict'

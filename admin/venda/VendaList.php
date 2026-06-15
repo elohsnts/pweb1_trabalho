@@ -9,22 +9,33 @@ $busca = $_GET['busca'] ?? '';
 $sql = "SELECT v.*, p.nome_peca FROM venda v 
         INNER JOIN produto p ON v.produto_id = p.id";
 
+// FILTRO E BUSCA DE VENDAS 
 if ($busca) {
+    // Se houver busca, filtra pelo status da venda, forma de pagamento ou nome do produto associado
     $sql .= " WHERE v.status_pedido LIKE :busca 
               OR v.forma_pagamento LIKE :busca 
               OR p.nome_peca LIKE :busca";
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':busca', "%$busca%");
 } else {
+    // Se não houver busca, prepara a consulta base (traz todas as vendas)
     $stmt = $db->prepare($sql);
 }
+// Executa a consulta no banco e guarda a lista de vendas na variável $vendas
 $stmt->execute();
 $vendas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+
+// --- BLOCO 2: EXCLUSÃO DE VENDA ---
 if (isset($_GET['deletar'])) {
+    // Se a URL tiver o parâmetro ?deletar=ID, captura o ID da venda
     $id = $_GET['deletar'];
+    
+    // Deleta o registro da venda diretamente do banco de dados
     $del = $db->prepare("DELETE FROM venda WHERE id = ?");
     $del->execute([$id]);
+    
+    // Redireciona de volta para a lista de vendas e encerra o script
     header("Location: VendaList.php");
     exit;
 }
@@ -56,7 +67,7 @@ if (isset($_GET['deletar'])) {
             </thead>
             <tbody>
                 <?php if (count($vendas) > 0): ?>
-                    <?php foreach ($vendas as $v): ?>
+                    <?php foreach ($vendas as $v): ?> <!-- percorre (repete) uma lista ou array de dados automaticamente, item por item. -->
                     <tr>
                         <td><?php echo date('d/m/Y', strtotime($v['data_compra'])); ?></td>
                         <td class="fw-semibold text-dark"><?php echo htmlspecialchars($v['nome_peca']); ?></td> <td><?php echo htmlspecialchars($v['forma_pagamento']); ?></td>

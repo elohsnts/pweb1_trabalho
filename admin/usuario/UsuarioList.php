@@ -7,19 +7,28 @@ $busca = $_GET['busca'] ?? '';
 
 $sql = "SELECT * FROM usuario";
 if ($busca) {
+    // Se houver busca, filtra por nome ou login usando LIKE (busca parcial)
     $sql .= " WHERE nome LIKE :busca OR login LIKE :busca";
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':busca', "%$busca%");
 } else {
+    // Se não houver busca, prepara para trazer todos os usuários
     $stmt = $db->prepare($sql);
 }
+// Executa a consulta e guarda a lista de usuários na variável $usuarios
 $stmt->execute();
 $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+
 if (isset($_GET['deletar'])) {
+    // Se a URL tiver o parâmetro ?deletar=ID, captura o ID enviado
     $id = $_GET['deletar'];
+    
+    // Deleta o registro do usuário diretamente do banco de dados
     $del = $db->prepare("DELETE FROM usuario WHERE id = ?");
     $del->execute([$id]);
+    
+    // Redireciona de volta para a lista e encerra a execução do script
     header("Location: UsuarioList.php");
     exit;
 }

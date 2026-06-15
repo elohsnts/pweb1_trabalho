@@ -6,13 +6,16 @@ $db = DB::conectar();
 $id = $_GET['id'] ?? null;
 $usuario = ['nome' => '', 'telefone' => '', 'email' => '', 'login' => '', 'senha' => ''];
 
+// Traz de volta do banco os dados de um produto já cadastrado para preencher o formulário (Modo Edição)
 if ($id) {
     $stmt = $db->prepare("SELECT * FROM usuario WHERE id = ?");
     $stmt->execute([$id]);
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+// CAPTURA DE DADOS: Se o formulário foi enviado, guarda em variáveis tudo o que o usuário digitou nos campos.
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Captura os dados vindos do formulário
     $nome = $_POST['nome'];
     $telefone = $_POST['telefone'];
     $email = $_POST['email'];
@@ -20,14 +23,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $senha = $_POST['senha'];
 
     if ($id) {
+        // Bloco de Edição: Se já existe um ID, atualiza o usuário no banco             
         $sql = "UPDATE usuario SET nome=?, telefone=?, email=?, login=?, senha=? WHERE id=?";
         $stmt = $db->prepare($sql);
         $stmt->execute([$nome, $telefone, $email, $login, $senha, $id]);
     } else {
+        // Bloco de Cadastro: Se não existe ID, insere um novo usuário no banco
         $sql = "INSERT INTO usuario (nome, telefone, email, login, senha) VALUES (?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
         $stmt->execute([$nome, $telefone, $email, $login, $senha]);
     }
+
+    // Redireciona para a lista de usuários e fecha o script
     header("Location: UsuarioList.php");
     exit;
 }
