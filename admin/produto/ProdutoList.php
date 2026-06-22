@@ -1,22 +1,33 @@
 <?php
+// Inclui o arquivo de classe do banco de dados para gerenciar a conexão
 include '../db.class.php';
+// Inclui o cabeçalho padrão (HTML inicial, CSS do Bootstrap, barra de navegação)
 include '../header.php';
 
+// Invoca o método estático conectar() da classe DB para estabelecer a conexão PDO
 $db = DB::conectar();
+// Captura o termo digitado no campo de busca via parâmetro GET. Se estiver vazio, assume uma string vazia
 $busca = $_GET['busca'] ?? '';
 
 // Define a consulta base para listar todos os produtos.
 // Se houver um termo de busca, filtra por 'nome_peca' ou 'cor_predominante' usando LIKE.
 // Executa a consulta de forma segura (Prepared Statement) e armazena os resultados em $produtos.
 $sql = "SELECT * FROM produto";
+// Condicional para verificar se o usuário realizou uma filtragem por palavra-chave
 if ($busca) {
+    // Concatena as cláusulas WHERE na consulta utilizando parâmetros nomeados (:busca)
     $sql .= " WHERE nome_peca LIKE :busca OR cor_predominante LIKE :busca";
+    // Prepara a instrução SQL no banco de dados de maneira protegida contra injeção de SQL
     $stmt = $db->prepare($sql);
+    // Vincula o termo de busca envolvendo-o em caracteres curinga (%) para correspondências parciais
     $stmt->bindValue(':busca', "%$busca%");
 } else {
+    // Caso nenhuma busca tenha sido feita, apenas prepara a query base que trará todos os registros
     $stmt = $db->prepare($sql);
 }
+// Executa a consulta estruturada no banco de dados
 $stmt->execute();
+// Recupera todos os registros encontrados e os armazena na variável como um array associativo
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Verifica se foi solicitada a exclusão de um produto via URL (?deletar=ID).
@@ -25,19 +36,29 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // 3. Deleta o registro do produto do banco de dados e redireciona para a lista.
  
 if (isset($_GET['deletar'])) {
+    // Armazena o ID do produto que será excluído
     $id = $_GET['deletar'];
     
     // Apaga o arquivo físico de imagem associado para não acumular lixo no servidor
+    // Prepara a consulta para descobrir o nome da imagem cadastrada para este produto específico
     $imgStmt = $db->prepare("SELECT imagem FROM produto WHERE id = ?");
+    // Executa a consulta passando o ID capturado
     $imgStmt->execute([$id]);
+    // Obtém o resultado da busca da imagem em formato associativo
     $imgProd = $imgStmt->fetch(PDO::FETCH_ASSOC);
+    // Verifica se o campo imagem não está vazio e se o arquivo físico realmente existe na pasta uploads
     if (!empty($imgProd['imagem']) && file_exists('../uploads/' . $imgProd['imagem'])) {
+        // Remove fisicamente o arquivo do diretório do servidor
         unlink('../uploads/' . $imgProd['imagem']);
     }
 
+    // Prepara de forma segura a exclusão do registro na tabela produto usando um placeholder (?)
     $del = $db->prepare("DELETE FROM produto WHERE id = ?");
+    // Executa o comando de exclusão passando o ID capturado para dentro do array de execução
     $del->execute([$id]);
+    // Redireciona o navegador de volta para a listagem limpa, atualizando a página e removendo parâmetros da URL
     header("Location: ProdutoList.php");
+    // Interrompe imediatamente o processamento do script atual
     exit;
 }
 ?>
@@ -101,4 +122,7 @@ if (isset($_GET['deletar'])) {
     </div>
 </div>
 
-<?php include '../footer.php'; ?>
+<?php 
+// Inclui o arquivo de rodapé padrão para fechar o layout HTML e renderizar scripts globais
+include '../footer.php'; 
+?>

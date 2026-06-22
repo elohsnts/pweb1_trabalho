@@ -1,20 +1,29 @@
 <?php
+// Inclui a classe de persistência e conexão com o banco de dados
 include '../db.class.php';
+// Inclui o componente visual do cabeçalho da página
 include '../header.php';
 
+// Ativa a conexão com o banco chamando o método conectar() da classe DB
 $db = DB::conectar();
+// Captura o ID da URL se ele existir (Modo Edição), caso contrário define como null
 $id = $_GET['id'] ?? null;
+// Inicializa o array do produto com valores padrão, definindo o tamanho padrão como 'M'
 $produto = ['nome_peca' => '', 'tamanho' => 'M', 'cor_predominante' => '', 'preco_venda' => '', 'imagem' => ''];
 
 // Traz de volta do banco os dados de um produto já cadastrado para preencher o formulário (Modo Edição)
 if ($id) {
+    // Prepara uma consulta segura baseada no ID recebido
     $stmt = $db->prepare("SELECT * FROM produto WHERE id = ?");
+    // Executa a busca passando o ID como argumento
     $stmt->execute([$id]);
+    // Preenche o array $produto com os dados reais recuperados do banco de dados
     $produto = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 // CAPTURA DE DADOS: Se o formulário foi enviado, guarda em variáveis tudo o que o usuário digitou nos campos.
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Atribui os dados enviados via POST às variáveis locais
     $nome = $_POST['nome_peca'];
     $tamanho = $_POST['tamanho'];
     $cor = $_POST['cor_predominante'];
@@ -23,8 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Mantém a imagem antiga por padrão se nenhuma nova for enviada
     $nome_imagem = $produto['imagem']; 
 
-    // Lógica para upload da imagem
+    // Lógica para upload da imagem: verifica se um arquivo foi enviado e se não há erros no envio
     if (isset($_FILES['imagem']) && $_FILES['imagem']['error'] == UPLOAD_ERR_OK) {
+        // Extrai a extensão do arquivo original enviado (ex: png, jpg)
         $extensao = pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION);
         // Gera um nome exclusivo baseado em timestamp para evitar sobrescrever arquivos
         $nome_imagem = uniqid() . "." . $extensao; 
@@ -32,26 +42,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Define o caminho da pasta de uploads (subindo um nível para compartilhar entre os escopos)
         $diretorio_destino = '../uploads/';
         
+        // Verifica se a pasta de destino existe. Se não existir, cria a pasta com permissões de leitura/escrita
         if (!is_dir($diretorio_destino)) {
             mkdir($diretorio_destino, 0755, true);
         }
         
         // CORRIGIDO: Alterado de tmp_temp para tmp_name para o correto funcionamento do upload
+        // Move o arquivo temporário do servidor para a pasta de destino final com o novo nome único
         move_uploaded_file($_FILES['imagem']['tmp_name'], $diretorio_destino . $nome_imagem);
     }
 
 // SALVAR NO BANCO: Se o produto já tem ID, atualiza os dados dele (UPDATE). 
 // Se não tem ID, cadastra como um produto novo (INSERT). Depois, volta para a listagem.
     if ($id) {
+        // SQL de atualização para modificar o registro correspondente ao ID
         $sql = "UPDATE produto SET nome_peca=?, tamanho=?, cor_predominante=?, preco_venda=?, imagem=? WHERE id=?";
         $stmt = $db->prepare($sql);
+        // Executa a query injetando os valores na ordem correta, incluindo o ID na cláusula WHERE
         $stmt->execute([$nome, $tamanho, $cor, $preco, $nome_imagem, $id]);
     } else {
+        // SQL de inserção para adicionar uma nova linha na tabela produto
         $sql = "INSERT INTO produto (nome_peca, tamanho, cor_predominante, preco_venda, imagem) VALUES (?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
+        // Executa a gravação do novo produto passando as variáveis correspondentes aos marcadores
         $stmt->execute([$nome, $tamanho, $cor, $preco, $nome_imagem]);
     }
+    // Redireciona o usuário para a tela de listagem de produtos
     header("Location: ProdutoList.php");
+    // Interrompe o processamento do arquivo atual
     exit;
 }
 ?>
@@ -99,7 +117,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="col-md-3">
                             <label class="form-label fw-bold">Cor Predominante <span class="text-danger">*</span></label>
                             <input type="text" name="cor_predominante" class="form-control" value="<?php echo htmlspecialchars($produto['cor_predominante']); ?>" required> 
-                            <!--htmlspecialchars usado para impedir que textos digitados por usuários quebrem o seu site ou virem vírus (ataques de hackers) -->
                             <div class="invalid-feedback">Defina a cor principal.</div>
                         </div>
                     </div>
@@ -147,41 +164,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 </div>
 
-<!-- Validação de formulários do Bootstrap + Suporte a Abas (Tabs)
- 1. Bloqueia o envio do formulário se houver campos inválidos.
- 2. Se o campo com erro estiver escondido em uma aba, ativa/mostra essa aba automaticamente.
- 3. Coloca o foco do teclado no primeiro campo com erro e aplica o visual de validação do Bootstrap.-->
 <script>
 (function () {
-    'use strict'
+    'use strict' // Habilita o modo estrito para o interpretador do JavaScript
 
+    // Obtém todos os formulários configurados com a classe 'needs-validation'
     var forms = document.querySelectorAll('.needs-validation')
 
+    // Converte a coleção em array e varre elemento por elemento
     Array.prototype.slice.call(forms).forEach(function (form) {
+        // Adiciona o escutador de eventos focado no gatilho de submit do formulário
         form.addEventListener('submit', function (event) {
+            // Verifica se o formulário falhou em alguma validação nativa do HTML
             if (!form.checkValidity()) {
-                event.preventDefault()
-                event.stopPropagation()
+                event.preventDefault() // Impede a continuação do envio dos dados
+                event.stopPropagation() // Para a propagação do evento na árvore do DOM
 
+                // Localiza o primeiro elemento inválido encontrado dentro do form
                 var firstInvalid = form.querySelector(':invalid');
                 if (firstInvalid) {
+                    // Descobre se o elemento inválido está localizado dentro de um container de abas (.tab-pane)
                     var tabPane = firstInvalid.closest('.tab-pane');
                     if (tabPane) {
+                        // Obtém o atributo ID do painel invisível que gerou o erro
                         var id = tabPane.getAttribute('id');
+                        // Localiza o botão da aba correspondente que controla a visualização desse painel
                         var tabButton = document.querySelector('[data-bs-target="#' + id + '"]');
                         if (tabButton) {
+                            // Instancia a API de Tabs do Bootstrap e força a exibição da aba onde está o erro
                             var tab = new bootstrap.Tab(tabButton);
                             tab.show();
                         }
                     }
+                    // Direciona o cursor/foco do teclado para o campo inválido
                     firstInvalid.focus();
                 }
             }
 
+            // Aplica a classe que sinaliza as cores de validação (sucesso ou falha) nos elementos HTML
             form.classList.add('was-validated')
         }, false)
     })
 })()
 </script>
 
-<?php include '../footer.php'; ?>
+<?php 
+// Inclui o encerramento do arquivo (rodapé padrão)
+include '../footer.php'; 
+?>

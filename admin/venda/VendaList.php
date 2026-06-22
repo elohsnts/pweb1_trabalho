@@ -1,42 +1,55 @@
+Aqui está o código da listagem de vendas com as anotações antigas removidas e substituídas por comentários detalhados linha por linha e bloco por bloco, mantendo toda a estrutura original intacta:
+
+```php
 <?php
+// Inclui o arquivo de classe do banco de dados para gerenciar o acesso e a persistência
 include '../db.class.php';
+// Inclui o componente visual do cabeçalho da página (HTML inicial, CSS, menu de navegação)
 include '../header.php';
 
+// Ativa e armazena a conexão com o banco de dados chamando o método estático conectar() da classe DB
 $db = DB::conectar();
+// Captura o termo digitado no campo de busca via parâmetro GET. Se estiver vazio, assume uma string vazia
 $busca = $_GET['busca'] ?? '';
 
-// INNER JOIN adicionado para buscar o nome do produto vinculado à venda
+// Define a consulta base utilizando INNER JOIN para cruzar a tabela de vendas com a tabela de produtos
+// Seleciona todas as colunas de vendas (v.*) e apenas a coluna 'nome_peca' da tabela produto (p)
 $sql = "SELECT v.*, p.nome_peca FROM venda v 
         INNER JOIN produto p ON v.produto_id = p.id";
 
-// FILTRO E BUSCA DE VENDAS 
+// Condicional para verificar se o usuário digitou algum termo de filtragem na busca
 if ($busca) {
-    // Se houver busca, filtra pelo status da venda, forma de pagamento ou nome do produto associado
+    // Adiciona as cláusulas WHERE relacionando as colunas das duas tabelas através de parâmetros nomeados (:busca)
     $sql .= " WHERE v.status_pedido LIKE :busca 
               OR v.forma_pagamento LIKE :busca 
               OR p.nome_peca LIKE :busca";
+    // Prepara a consulta SQL de maneira segura contra vulnerabilidades de injeção de código
     $stmt = $db->prepare($sql);
+    // Vincula o valor do filtro cercando a variável por caracteres curinga (%) para busca parcial
     $stmt->bindValue(':busca', "%$busca%");
 } else {
-    // Se não houver busca, prepara a consulta base (traz todas as vendas)
+    // Caso o campo de busca esteja em branco, prepara a consulta inicial completa sem restrições
     $stmt = $db->prepare($sql);
 }
-// Executa a consulta no banco e guarda a lista de vendas na variável $vendas
+// Executa a query montada no banco de dados
 $stmt->execute();
+// Agrupa os registros encontrados e os converte em um array associativo dentro de $vendas
 $vendas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-// --- BLOCO 2: EXCLUSÃO DE VENDA ---
+// Verifica se existe o parâmetro 'deletar' na URL da página enviado via método GET
 if (isset($_GET['deletar'])) {
-    // Se a URL tiver o parâmetro ?deletar=ID, captura o ID da venda
+    // Captura o número identificador (ID) da venda que deve ser excluída
     $id = $_GET['deletar'];
     
-    // Deleta o registro da venda diretamente do banco de dados
+    // Prepara de maneira protegida a exclusão do registro na tabela venda utilizando placeholder (?)
     $del = $db->prepare("DELETE FROM venda WHERE id = ?");
+    // Executa a deleção passando a variável do ID mapeada dentro de um array de execução
     $del->execute([$id]);
     
-    // Redireciona de volta para a lista de vendas e encerra o script
+    // Recarrega o navegador redirecionando o fluxo limpo para o arquivo de listagem de vendas
     header("Location: VendaList.php");
+    // Interrompe na mesma hora o processamento e a leitura deste arquivo PHP pelo servidor
     exit;
 }
 ?>
@@ -67,7 +80,7 @@ if (isset($_GET['deletar'])) {
             </thead>
             <tbody>
                 <?php if (count($vendas) > 0): ?>
-                    <?php foreach ($vendas as $v): ?> <!-- percorre (repete) uma lista ou array de dados automaticamente, item por item. -->
+                    <?php foreach ($vendas as $v): ?> 
                     <tr>
                         <td><?php echo date('d/m/Y', strtotime($v['data_compra'])); ?></td>
                         <td class="fw-semibold text-dark"><?php echo htmlspecialchars($v['nome_peca']); ?></td> <td><?php echo htmlspecialchars($v['forma_pagamento']); ?></td>
@@ -93,4 +106,9 @@ if (isset($_GET['deletar'])) {
     </div>
 </div>
 
-<?php include '../footer.php'; ?>
+<?php 
+// Inclui os componentes estruturais do rodapé do sistema (HTML final e tags de fechamento)
+include '../footer.php'; 
+?>
+
+```

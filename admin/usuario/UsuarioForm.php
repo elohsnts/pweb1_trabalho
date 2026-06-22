@@ -1,41 +1,53 @@
 <?php
+// Inclui o arquivo de classe do banco de dados para gerenciar a conexão
 include '../db.class.php';
+// Inclui o cabeçalho padrão do layout do sistema (HTML inicial, CSS, barra de navegação)
 include '../header.php';
 
+// Ativa e armazena a conexão com o banco de dados na variável $db chamando o método estático da classe DB
 $db = DB::conectar();
+// Captura o 'id' da URL via método GET. Se não existir, define como null (operador de coalescência nula)
 $id = $_GET['id'] ?? null;
+// Inicializa um array com campos vazios para evitar erros de índice indefinido na renderização inicial do formulário
 $usuario = ['nome' => '', 'telefone' => '', 'email' => '', 'login' => '', 'senha' => ''];
 
-// Traz de volta do banco os dados de um produto já cadastrado para preencher o formulário (Modo Edição)
+// Verifica se um ID foi passado na URL para carregar as informações do usuário atual (Modo Edição)
 if ($id) {
+    // Prepara de forma segura a consulta SQL usando placeholders (?) para evitar ataques de SQL Injection
     $stmt = $db->prepare("SELECT * FROM usuario WHERE id = ?");
+    // Executa a consulta passando o ID capturado para a substituição do marcador
     $stmt->execute([$id]);
+    // Sobrescreve o array vazio com os dados reais do usuário vindos diretamente do banco
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-// CAPTURA DE DADOS: Se o formulário foi enviado, guarda em variáveis tudo o que o usuário digitou nos campos.
+// Verifica se a requisição foi feita através do método POST, indicando o envio do formulário
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Captura os dados vindos do formulário
+    // Captura os dados inseridos pelo usuário nos campos de texto do formulário
     $nome = $_POST['nome'];
     $telefone = $_POST['telefone'];
     $email = $_POST['email'];
     $login = $_POST['login'];
     $senha = $_POST['senha'];
 
+    // Se houver um ID, executa a atualização (UPDATE) de um registro que já existe
     if ($id) {
-        // Bloco de Edição: Se já existe um ID, atualiza o usuário no banco             
+        // Define a instrução SQL para modificar as informações do usuário no banco com base no ID
         $sql = "UPDATE usuario SET nome=?, telefone=?, email=?, login=?, senha=? WHERE id=?";
         $stmt = $db->prepare($sql);
+        // Executa o comando passando os valores na ordem exata dos marcadores de interrogação (?)
         $stmt->execute([$nome, $telefone, $email, $login, $senha, $id]);
     } else {
-        // Bloco de Cadastro: Se não existe ID, insere um novo usuário no banco
+        // Se NÃO houver ID, realiza a inserção (INSERT) de um novo usuário na tabela
         $sql = "INSERT INTO usuario (nome, telefone, email, login, senha) VALUES (?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
+        // Executa a inserção dos dados informados no banco de dados
         $stmt->execute([$nome, $telefone, $email, $login, $senha]);
     }
 
-    // Redireciona para a lista de usuários e fecha o script
+    // Redireciona o navegador de volta para a tela de listagem de usuários cadastrados
     header("Location: UsuarioList.php");
+    // Finaliza imediatamente o processamento deste script PHP
     exit;
 }
 ?>
@@ -77,4 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 </div>
 
-<?php include '../footer.php'; ?>
+<?php 
+// Inclui o arquivo de rodapé padrão da aplicação para fechar as tags abertas e carregar arquivos JavaScript globais
+include '../footer.php'; 
+?>

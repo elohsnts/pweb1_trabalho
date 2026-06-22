@@ -1,26 +1,45 @@
 <?php
+// Inclui o arquivo que contém a classe responsável pela conexão com o banco de dados
 include '../db.class.php';
+// Inclui o arquivo de cabeçalho padrão (HTML inicial, links CSS, menu superior)
 include '../header.php';
 
+// Invoca o método estático conectar() da classe DB para estabelecer a conexão PDO
 $db = DB::conectar();
+// Captura o termo digitado na pesquisa via parâmetro GET. Se estiver vazio, define como string vazia
 $busca = $_GET['busca'] ?? '';
 
+// Define a estrutura base da consulta SQL para selecionar dados da tabela fornecedor
 $sql = "SELECT * FROM fornecedor";
+
+// Condicional para verificar se o usuário submeteu uma palavra-chave no campo de busca
 if ($busca) {
+    // Acrescenta a cláusula WHERE filtrando por nome ou CNPJ através de parâmetros nomeados (:busca)
     $sql .= " WHERE nome_empresa LIKE :busca OR cnpj LIKE :busca";
+    // Prepara a instrução SQL no banco de dados de maneira protegida contra injeção de SQL
     $stmt = $db->prepare($sql);
+    // Vincula o valor da variável de busca ao parâmetro da query, adicionando as porcentagens (%) para busca parcial (LIKE)
     $stmt->bindValue(':busca', "%$busca%");
 } else {
+    // Caso nenhuma busca tenha sido feita, apenas prepara a query base que trará todos os registros
     $stmt = $db->prepare($sql);
 }
+// Executa a consulta configurada no banco de dados
 $stmt->execute();
+// Recupera todos os registros resultantes da consulta organizados em um array associativo
 $fornecedores = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Verifica se existe uma requisição de exclusão enviada via parâmetro GET 'deletar' na URL
 if (isset($_GET['deletar'])) {
+    // Armazena o ID do fornecedor que se deseja apagar
     $id = $_GET['deletar'];
+    // Prepara a instrução SQL de exclusão utilizando o marcador de posição (?) para segurança
     $del = $db->prepare("DELETE FROM fornecedor WHERE id = ?");
+    // Executa a exclusão passando o ID capturado para dentro do array de execução
     $del->execute([$id]);
+    // Redireciona o navegador de volta para a listagem limpa, atualizando a página e removendo o ID da URL
     header("Location: FornecedorList.php");
+    // Encerra imediatamente a execução deste script PHP após o comando de redirecionamento
     exit;
 }
 ?>
@@ -67,4 +86,7 @@ if (isset($_GET['deletar'])) {
     </div>
 </div>
 
-<?php include '../footer.php'; ?>
+<?php 
+// Inclui o arquivo de rodapé padrão (fechamento de tags HTML e inclusão de scripts JavaScript globais)
+include '../footer.php'; 
+?>
